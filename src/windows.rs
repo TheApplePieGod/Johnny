@@ -1,6 +1,7 @@
-use windows_sys::{Win32::{UI::WindowsAndMessaging::*, Foundation::*}};
+use windows_sys::{Win32::{UI::WindowsAndMessaging::*, UI::Input::KeyboardAndMouse::*, Foundation::*}};
 use std::thread;
 use std::time;
+use std::mem;
 use std::process::Command;
 
 use crate::runner::{TestEvent, KeyCode};
@@ -94,18 +95,34 @@ fn key_to_wincode(key: &KeyCode) -> usize {
 pub fn process_event(windows: &[isize], event: &TestEvent) {
     match event {
         TestEvent::Delay { amount } => thread::sleep(time::Duration::from_millis(*amount)),
-        TestEvent::KeyDown { key } => unsafe {
+        TestEvent::KeyDown { key, direct } => unsafe {
             let win_key = key_to_wincode(key);
-            for window in windows {
-                SendMessageA(*window, WM_CHAR, win_key, 0);
-                SendMessageA(*window, WM_KEYDOWN, win_key, 0);
+            if *direct {
+                for window in windows {
+                    SendMessageA(*window, WM_CHAR, win_key, 0);
+                    SendMessageA(*window, WM_KEYDOWN, win_key, 0);
+                }
+            } else {
+                let input = INPUT {
+                    r#type: INPUT_KEYBOARD,
+                    Anonymous: INPUT_0 { ki: KEYBDINPUT { wVk: win_key as u16, wScan: 0, dwFlags: 0, time: 0, dwExtraInfo: 0 } }
+                };
+                SendInput(1, &input as *const INPUT, mem::size_of::<INPUT>() as i32);
             }
         },
-        TestEvent::KeyUp { key } => unsafe {
+        TestEvent::KeyUp { key, direct } => unsafe {
             let win_key = key_to_wincode(key);
             let keyup_flags = ((KF_UP | KF_REPEAT | KF_ALTDOWN) << 16) as isize;
-            for window in windows {
-                SendMessageA(*window, WM_KEYUP, win_key, keyup_flags);
+            if *direct {
+                for window in windows {
+                    SendMessageA(*window, WM_KEYUP, win_key, keyup_flags);
+                }
+            } else {
+                let input = INPUT {
+                    r#type: INPUT_KEYBOARD,
+                    Anonymous: INPUT_0 { ki: KEYBDINPUT { wVk: win_key as u16, wScan: 0, dwFlags: KEYEVENTF_KEYUP, time: 0, dwExtraInfo: 0 } }
+                };
+                SendInput(1, &input as *const INPUT, mem::size_of::<INPUT>() as i32);
             }
         }
     }

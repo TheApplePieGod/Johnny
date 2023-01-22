@@ -16,8 +16,8 @@ pub enum KeyCode {
 #[derive(Serialize, Deserialize)]
 pub enum TestEvent {
     Delay { amount: u64 },
-    KeyDown { key: KeyCode },
-    KeyUp { key: KeyCode }
+    KeyDown { key: KeyCode, direct: bool },
+    KeyUp { key: KeyCode, direct: bool }
 }
 
 #[derive(Serialize, Deserialize)]
