@@ -98,9 +98,13 @@ pub fn process_event(windows: &[isize], event: &TestEvent) {
         TestEvent::KeyDown { key, direct } => unsafe {
             let win_key = key_to_wincode(key);
             if *direct {
+                let mut keydown_flags = 0 as isize;
+                if GetKeyState(win_key as i32) > 0 {
+                    keydown_flags |= (KF_REPEAT << 16) as isize;
+                }
                 for window in windows {
                     SendMessageA(*window, WM_CHAR, win_key, 0);
-                    SendMessageA(*window, WM_KEYDOWN, win_key, 0);
+                    SendMessageA(*window, WM_KEYDOWN, win_key, keydown_flags);
                 }
             } else {
                 let input = INPUT {
@@ -112,8 +116,8 @@ pub fn process_event(windows: &[isize], event: &TestEvent) {
         },
         TestEvent::KeyUp { key, direct } => unsafe {
             let win_key = key_to_wincode(key);
-            let keyup_flags = ((KF_UP | KF_REPEAT | KF_ALTDOWN) << 16) as isize;
             if *direct {
+                let keyup_flags = ((KF_UP | KF_REPEAT) << 16) as isize;
                 for window in windows {
                     SendMessageA(*window, WM_KEYUP, win_key, keyup_flags);
                 }
@@ -125,5 +129,24 @@ pub fn process_event(windows: &[isize], event: &TestEvent) {
                 SendInput(1, &input as *const INPUT, mem::size_of::<INPUT>() as i32);
             }
         }
+        TestEvent::MouseDown { button, direct } => unsafe {
+            let win_key = key_to_wincode(key);
+            if *direct {
+                let mut keydown_flags = 0 as isize;
+                if GetKeyState(win_key as i32) > 0 {
+                    keydown_flags |= (KF_REPEAT << 16) as isize;
+                }
+                for window in windows {
+                    SendMessageA(*window, WM_CHAR, win_key, 0);
+                    SendMessageA(*window, WM_KEYDOWN, win_key, keydown_flags);
+                }
+            } else {
+                let input = INPUT {
+                    r#type: INPUT_KEYBOARD,
+                    Anonymous: INPUT_0 { ki: KEYBDINPUT { wVk: win_key as u16, wScan: 0, dwFlags: 0, time: 0, dwExtraInfo: 0 } }
+                };
+                SendInput(1, &input as *const INPUT, mem::size_of::<INPUT>() as i32);
+            }
+        },
     }
 }

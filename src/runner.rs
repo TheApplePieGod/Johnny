@@ -13,11 +13,20 @@ pub enum KeyCode {
     LShift, LCtrl
 }
 
+#[derive(Serialize, Deserialize, Copy, Clone)]
+pub enum MouseCode {
+    Left = 0,
+    Right,
+    Middle
+}
+
 #[derive(Serialize, Deserialize)]
 pub enum TestEvent {
     Delay { amount: u64 },
     KeyDown { key: KeyCode, direct: bool },
-    KeyUp { key: KeyCode, direct: bool }
+    KeyUp { key: KeyCode, direct: bool },
+    MouseDown { button: MouseCode, direct: bool },
+    MouseUp { button: MouseCode, direct: bool }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -29,9 +38,9 @@ pub struct RunInfo {
     events: Vec<TestEvent>
 }
 
-pub fn run() {
+pub fn run(run_info_path: &str) {
     // Parse run info
-    let run_info_str = fs::read_to_string("test/Program2.json").expect("Failed to load run info data");
+    let run_info_str = fs::read_to_string(run_info_path).expect("Failed to load run info data");
     let run_info: RunInfo = serde_json::from_str(&run_info_str).expect("Failed to parse run info data");
     
     println!("Executing process '{}' in directory '{}'", run_info.program, run_info.work_dir);

@@ -3,5 +3,5 @@ pub mod input;
 pub mod windows;
 
 fn main() {
-    runner::run();
+    runner::run("test/Program2.json");
 }
